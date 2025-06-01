@@ -143,15 +143,19 @@ def main():
     
     # Extract race URLs from index page
     race_urls = extract_race_urls(index_content)
-    print(f"Found {len(race_urls)} race rating posts:")
+    print(f"Found {len(race_urls)} race rating posts")
     
-    for url in race_urls:
+    # Limit to latest 3 races
+    latest_races = race_urls[:3]
+    print(f"Processing latest {len(latest_races)} races:")
+    
+    for url in latest_races:
         print(f"  - {url}")
     
     print("\nDownloading individual race pages...")
     
     # Download each race page and extract ratings
-    for url in race_urls:
+    for url in latest_races:
         print(f"\nProcessing: {url}")
         page_content = download_page(url)
         
