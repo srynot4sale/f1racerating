@@ -167,6 +167,9 @@ def main():
         if page_content:
             rating_info = extract_rating_from_page(page_content, url)
             race_name = url.split("/")[-2].replace("-", " ").title()
+            # Remove "Rate The Race" prefix if present
+            if race_name.startswith("Rate The Race "):
+                race_name = race_name[14:]
             print(f"  Race: {race_name}")
             print(f"  Rating: {rating_info['rating']}")
             print(f"  Median: {rating_info['median']}")
