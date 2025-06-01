@@ -34,6 +34,28 @@ def download_page(url):
         return None
 
 
+def calculate_median(votes_by_rating, total_voters):
+    """Calculate the median rating from vote distribution."""
+    if not votes_by_rating or total_voters == 0:
+        return 0
+    
+    # Sort by rating (ascending order)
+    votes_by_rating.sort(key=lambda x: x[0])
+    
+    # Find median position
+    median_pos = total_voters / 2
+    
+    # Count cumulative votes to find median
+    cumulative_votes = 0
+    for rating, votes in votes_by_rating:
+        cumulative_votes += votes
+        if cumulative_votes >= median_pos:
+            return rating
+    
+    # Fallback (shouldn't reach here)
+    return votes_by_rating[-1][0]
+
+
 def extract_rating_from_page(html_content, url):
     """Extract the rating from a race rating page."""
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -55,9 +77,10 @@ def extract_rating_from_page(html_content, url):
         # Extract ratings and percentages
         rating_items = polls_div.find_all('li')
         if not rating_items:
-            return {"url": url, "rating": "No ratings found", "votes": total_voters}
+            return {"url": url, "rating": "No ratings found", "votes": total_voters, "median": "N/A"}
         
         total_weighted_score = 0
+        votes_by_rating = []
         
         for item in rating_items:
             item_text = item.get_text(strip=True)
@@ -75,7 +98,10 @@ def extract_rating_from_page(html_content, url):
                 percentage = float(percentage_str)
                 
                 # Calculate votes for this rating
-                votes_for_rating = (percentage / 100) * total_voters
+                votes_for_rating = round((percentage / 100) * total_voters)
+                
+                # Store for median calculation
+                votes_by_rating.append((rating, votes_for_rating))
                 
                 # Add to weighted score
                 total_weighted_score += rating * votes_for_rating
@@ -83,19 +109,23 @@ def extract_rating_from_page(html_content, url):
             except (ValueError, IndexError):
                 continue
         
+        # Calculate median
+        median_rating = calculate_median(votes_by_rating, total_voters)
+        
         # Calculate average rating
         if total_voters > 0:
             average_rating = total_weighted_score / total_voters
             return {
                 "url": url, 
                 "rating": f"{average_rating:.2f}", 
-                "votes": total_voters
+                "votes": total_voters,
+                "median": f"{median_rating:.1f}"
             }
         else:
-            return {"url": url, "rating": "No votes", "votes": 0}
+            return {"url": url, "rating": "No votes", "votes": 0, "median": "N/A"}
             
     except Exception as e:
-        return {"url": url, "rating": f"Error: {e}", "votes": 0}
+        return {"url": url, "rating": f"Error: {e}", "votes": 0, "median": "N/A"}
 
 
 def main():
@@ -130,6 +160,7 @@ def main():
             race_name = url.split('/')[-2].replace('-', ' ').title()
             print(f"  Race: {race_name}")
             print(f"  Rating: {rating_info['rating']}")
+            print(f"  Median: {rating_info['median']}")
             print(f"  Votes: {rating_info['votes']}")
         else:
             print(f"  Failed to download page")
