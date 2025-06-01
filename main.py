@@ -45,13 +45,13 @@ def main():
     print("F1 Race Rating Extractor")
     print("=" * 40)
     
-    # For now, use the local index.html file
-    # In production, this would download from the actual website
-    try:
-        with open('index.html', 'r', encoding='utf-8') as f:
-            index_content = f.read()
-    except FileNotFoundError:
-        print("Error: index.html file not found")
+    # Download the latest index page from RaceFans
+    index_url = "https://www.racefans.net/category/regular-features/rate-the-race/"
+    print(f"Downloading index page: {index_url}")
+    
+    index_content = download_page(index_url)
+    if not index_content:
+        print("Error: Failed to download index page")
         return
     
     # Extract race URLs from index page
