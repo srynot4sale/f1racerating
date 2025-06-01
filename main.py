@@ -44,12 +44,13 @@ def extract_rating_from_page(html_content, url):
         if not polls_div:
             return {"url": url, "rating": "No poll found", "votes": 0}
         
-        # Extract total voters
-        total_voters_elem = polls_div.find('strong')
-        if not total_voters_elem:
+        # Extract total voters - look for "Total Voters: <strong>198</strong>"
+        total_voters_text = polls_div.get_text()
+        total_voters_match = re.search(r'Total Voters:\s*(\d+)', total_voters_text)
+        if not total_voters_match:
             return {"url": url, "rating": "No voter count found", "votes": 0}
         
-        total_voters = int(total_voters_elem.text.strip())
+        total_voters = int(total_voters_match.group(1))
         
         # Extract ratings and percentages
         rating_items = polls_div.find_all('li')
