@@ -36,9 +36,65 @@ def download_page(url):
 
 def extract_rating_from_page(html_content, url):
     """Extract the rating from a race rating page."""
-    # This will need to be implemented based on the structure of individual race pages
-    # For now, return a placeholder
-    return {"url": url, "rating": "TBD"}
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    try:
+        # Find the polls section
+        polls_div = soup.find('div', class_='wp-polls')
+        if not polls_div:
+            return {"url": url, "rating": "No poll found", "votes": 0}
+        
+        # Extract total voters
+        total_voters_elem = polls_div.find('strong')
+        if not total_voters_elem:
+            return {"url": url, "rating": "No voter count found", "votes": 0}
+        
+        total_voters = int(total_voters_elem.text.strip())
+        
+        # Extract ratings and percentages
+        rating_items = polls_div.find_all('li')
+        if not rating_items:
+            return {"url": url, "rating": "No ratings found", "votes": total_voters}
+        
+        total_weighted_score = 0
+        
+        for item in rating_items:
+            item_text = item.get_text(strip=True)
+            
+            # Parse format like "10 (2%)"
+            parts = item_text.split('(')
+            if len(parts) != 2:
+                continue
+                
+            rating_str = parts[0].strip()
+            percentage_str = parts[1].rstrip('%)').strip()
+            
+            try:
+                rating = int(rating_str)
+                percentage = float(percentage_str)
+                
+                # Calculate votes for this rating
+                votes_for_rating = (percentage / 100) * total_voters
+                
+                # Add to weighted score
+                total_weighted_score += rating * votes_for_rating
+                
+            except (ValueError, IndexError):
+                continue
+        
+        # Calculate average rating
+        if total_voters > 0:
+            average_rating = total_weighted_score / total_voters
+            return {
+                "url": url, 
+                "rating": f"{average_rating:.2f}", 
+                "votes": total_voters
+            }
+        else:
+            return {"url": url, "rating": "No votes", "votes": 0}
+            
+    except Exception as e:
+        return {"url": url, "rating": f"Error: {e}", "votes": 0}
 
 
 def main():
@@ -73,6 +129,7 @@ def main():
             race_name = url.split('/')[-2].replace('-', ' ').title()
             print(f"  Race: {race_name}")
             print(f"  Rating: {rating_info['rating']}")
+            print(f"  Votes: {rating_info['votes']}")
         else:
             print(f"  Failed to download page")
 
